@@ -4,6 +4,7 @@ defmodule KafkaEx.Server do
   """
 
   alias KafkaEx.Protocol.ConsumerMetadata
+  alias KafkaEx.Protocol.ListGroups
   alias KafkaEx.Protocol.Metadata
   alias KafkaEx.Protocol.Metadata.Broker
   alias KafkaEx.Protocol.Metadata.Response, as: MetadataResponse
@@ -113,6 +114,13 @@ defmodule KafkaEx.Server do
     {:noreply, new_state, timeout | :hibernate} |
     {:stop, reason, reply, new_state} |
     {:stop, reason, new_state} when reply: term, new_state: term, reason: term
+  @callback kafka_server_list_groups(broker :: Broker.t, state :: State.t) ::
+    {:reply, reply, new_state} |
+    {:reply, reply, new_state, timeout | :hibernate} |
+    {:noreply, new_state} |
+    {:noreply, new_state, timeout | :hibernate} |
+    {:stop, reason, reply, new_state} |
+    {:stop, reason, new_state} when reply: term, new_state: term, reason: term
   @callback kafka_server_create_stream(handler :: term, handler_init :: term, state :: State.t) ::
     {:reply, reply, new_state} |
     {:reply, reply, new_state, timeout | :hibernate} |
@@ -204,6 +212,10 @@ defmodule KafkaEx.Server do
 
       def handle_call({:heartbeat, group_name, generation_id, member_id}, _from, state) do
         kafka_server_heartbeat(group_name, generation_id, member_id, state)
+      end
+
+      def handle_call({:list_groups, broker}, _from, state) do
+        kafka_server_list_groups(broker, state)
       end
 
       def handle_call({:create_stream, handler, handler_init}, _from, state) do
@@ -311,6 +323,23 @@ defmodule KafkaEx.Server do
         {correlation_id, metadata} = retrieve_metadata(state.brokers, state.correlation_id, state.sync_timeout, topic)
         updated_state = %{state | metadata: metadata, correlation_id: correlation_id}
         {:reply, metadata, updated_state}
+      end
+
+      def kafka_server_list_groups(broker, state) do
+        list_groups_request = ListGroups.create_request(state.correlation_id, @client_id)
+
+        {response, state} = case Enum.find(state.brokers, &(&1.node_id == broker.node_id)) do
+          nil ->
+            {:broker_not_found, state}
+
+          broker ->
+            response = broker
+              |> NetworkClient.send_sync_request(list_groups_request, state.sync_timeout)
+              |> ListGroups.parse_response
+            {response, %{state | correlation_id: state.correlation_id + 1}}
+        end
+
+        {:reply, response, state}
       end
 
       def kafka_server_create_stream(handler, handler_init, state) do

@@ -103,6 +103,27 @@ defmodule KafkaEx do
     GenServer.call(worker_name, {:metadata, topic})
   end
 
+  @doc """
+  Return group information for the given broker.
+
+  Each group is managed by an individual broker. To fetch all groups in a cluster, call `list_groups` with each broker.
+
+  Optional arguments(KeywordList)
+  - worker_name: the worker we want to run this request through, when none is provided the default worker `:kafka_ex` is used
+
+  ## Example
+
+  ```elixir
+  iex> KafkaEx.metadata.brokers |> hd |> KafkaEx.list_groups
+  %KafkaEx.Protocol.ListGroups.Response{error_code: :no_error, groups: [%KafkaEx.Protocol.ListGroups.Group{group_id: "console-consumer", protocol: "consumer"}]}
+  ```
+  """
+  @spec list_groups(Broker.t, Keyword.t) :: ListGroupsResponse.t | :broker_not_found
+  def list_groups(broker, opts \\ []) do
+    worker_name = Keyword.get(opts, :worker_name, Config.default_worker)
+    GenServer.call(worker_name, {:list_groups, broker})
+  end
+
   @spec consumer_group_metadata(atom, binary) :: ConsumerMetadataResponse.t
   def consumer_group_metadata(worker_name, supplied_consumer_group) do
     GenServer.call(worker_name, {:consumer_group_metadata, supplied_consumer_group})
