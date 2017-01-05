@@ -11,6 +11,7 @@ defmodule KafkaEx.Protocol do
   @join_group_request        11
   @heartbeat_request         12
   @sync_group_request        14
+  @list_groups_request       16
 
   @api_version  0
 
@@ -52,6 +53,10 @@ defmodule KafkaEx.Protocol do
 
   defp api_key(:sync_group) do
     @sync_group_request
+  end
+
+  defp api_key(:list_groups) do
+    @list_groups_request
   end
 
   def create_request(type, correlation_id, client_id) do
