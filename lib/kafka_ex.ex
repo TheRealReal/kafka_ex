@@ -77,6 +77,32 @@ defmodule KafkaEx do
     GenServer.call(worker, :consumer_group)
   end
 
+  def join_group(group_name, topics, opts \\ []) do
+    worker_name = Keyword.get(opts, :worker_name, Config.default_worker)
+    session_timeout = Keyword.get(opts, :session_timeout, 10_000)
+    member_id = Keyword.get(opts, :member_id, "")
+    timeout = Keyword.get(opts, :timeout, session_timeout + 5000)
+    GenServer.call(worker_name, {:join_group, group_name, topics, member_id, session_timeout, timeout}, timeout)
+  end
+
+  def sync_group(group_name, generation_id, member_id, assignments, opts \\ []) do
+    worker_name = Keyword.get(opts, :worker_name, Config.default_worker)
+    timeout = Keyword.get(opts, :timeout, 5000)
+    GenServer.call(worker_name, {:sync_group, group_name, generation_id, member_id, assignments, timeout}, timeout)
+  end
+
+  def leave_group(group_name, member_id, opts \\ []) do
+    worker_name = Keyword.get(opts, :worker_name, Config.default_worker)
+    timeout = Keyword.get(opts, :timeout, 5000)
+    GenServer.call(worker_name, {:leave_group, group_name, member_id, timeout}, timeout)
+  end
+
+  def heartbeat(group_name, generation_id, member_id, opts \\ []) do
+    worker_name = Keyword.get(opts, :worker_name, Config.default_worker)
+    timeout = Keyword.get(opts, :timeout, 5000)
+    GenServer.call(worker_name, {:heartbeat, group_name, generation_id, member_id, timeout}, timeout)
+  end
+
   @doc """
   Return metadata for the given topic; returns for all topics if topic is empty string
 
@@ -199,7 +225,7 @@ defmodule KafkaEx do
     })
   end
 
-  @spec offset_commit(atom, OffsetCommitRequest.t) :: OffsetCommitResponse.t
+  @spec offset_commit(atom, OffsetCommitRequest.t) :: [OffsetCommitResponse.t]
   def offset_commit(worker_name, offset_commit_request) do
     GenServer.call(worker_name, {:offset_commit, offset_commit_request})
   end

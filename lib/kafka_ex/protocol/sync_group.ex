@@ -28,11 +28,9 @@ defmodule KafkaEx.Protocol.SyncGroup do
 
   @spec parse_response(binary) :: Response.t
   def parse_response(<< _correlation_id :: 32-signed, error_code :: 16-signed,
-                        _member_assignment_len :: 32-signed,
-                        @member_assignment_version :: 16-signed,
-                        assignments_size :: 32-signed, rest :: binary >>) do
-    assignments = parse_assignments(assignments_size, rest, [])
-    %Response{error_code: KafkaEx.Protocol.error(error_code), assignments: assignments}
+                        member_assignment_len :: 32-signed,
+                        member_assignment :: size(member_assignment_len)-binary >>) do
+    %Response{error_code: KafkaEx.Protocol.error(error_code), assignments: parse_member_assignment(member_assignment)}
   end
 
   # Helper functions to create assignment data structure
@@ -64,6 +62,11 @@ defmodule KafkaEx.Protocol.SyncGroup do
   defp partition_id_data([h|t], acc), do: partition_id_data(t, acc <> << h :: 32-signed >>)
 
   # Helper functions to parse assignments
+
+  defp parse_member_assignment(<<>>), do: []
+  defp parse_member_assignment(<< @member_assignment_version :: 16-signed, assignments_size :: 32-signed, rest :: binary >>) do
+    parse_assignments(assignments_size, rest, [])
+  end
 
   defp parse_assignments(0, _rest, assignments), do: assignments
   defp parse_assignments(size, << topic_len :: 16-signed, topic :: size(topic_len)-binary,
