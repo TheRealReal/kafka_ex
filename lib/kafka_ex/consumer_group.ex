@@ -125,6 +125,10 @@ defmodule KafkaEx.ConsumerGroup do
   end
 
   defp update_assignments(%SyncGroupResponse{error_code: :rebalance_in_progress}, %State{} = state), do: rebalance(state)
+  defp update_assignments(%SyncGroupResponse{error_code: :not_coordinator_for_consumer, assignments: assignments}, %State{} = state) do
+    IO.puts "NOT COORDINATOR updated_assignments"
+    start_consumer(state, assignments)
+  end
   defp update_assignments(%SyncGroupResponse{error_code: :no_error, assignments: assignments}, %State{} = state) do
     start_consumer(state, assignments)
   end
@@ -147,7 +151,13 @@ defmodule KafkaEx.ConsumerGroup do
 
   defp leave(%State{worker_name: worker_name, group_name: group_name, member_id: member_id} = state) do
     stop_consumer(state)
-    %LeaveGroupResponse{error_code: :no_error} = KafkaEx.leave_group(group_name, member_id, worker_name: worker_name)
+    case KafkaEx.leave_group(group_name, member_id, worker_name: worker_name) do
+      %LeaveGroupResponse{error_code: :no_error} ->
+        nil
+      %LeaveGroupResponse{error_code: :not_coordinator_for_consumer} ->
+        IO.puts "NOT COORDINATOR leave"
+        nil
+    end
   end
 
   defp start_consumer(%State{consumer_module: consumer_module, consumer_opts: consumer_opts,
