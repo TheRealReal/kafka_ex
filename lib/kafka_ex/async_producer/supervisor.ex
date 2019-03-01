@@ -27,6 +27,8 @@ defmodule KafkaEx.AsyncProducer.Supervisor do
   def init(opts) do
     import Supervisor.Spec
 
+    {:ok, worker_opts} = KafkaEx.build_worker_options(consumer_group: :no_consumer_group)
+
     children = [
       # A separate supervisor for the KafkaEx worker isolates the Queue and Publisher processes from
       # crashing when the KafkaEx worker crashes (such as when the Kafka cluster is unreachable).
@@ -34,7 +36,7 @@ defmodule KafkaEx.AsyncProducer.Supervisor do
       supervisor(Supervisor, [
         [worker(
           KafkaEx.Config.server_impl(),
-          [[uris: KafkaEx.Config.brokers(), consumer_group: :no_consumer_group], :no_name],
+          [worker_opts, :no_name],
           id: :worker)],
         [strategy: :one_for_one,
          max_restarts: Application.get_env(:kafka_ex, :max_restarts),
