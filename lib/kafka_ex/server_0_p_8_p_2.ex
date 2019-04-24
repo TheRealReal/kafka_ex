@@ -258,7 +258,7 @@ defmodule KafkaEx.Server0P8P2 do
 
       {response, state_out} ->
 
-        if (response == nil || (response |> hd |> Map.get(:partitions)) == nil) do
+        if (response == nil || response == [] || (response |> hd |> Map.get(:partitions)) == nil || (response |> hd |> Map.get(:partitions)) == []) do
           IO.puts "-------------------------"
           IO.inspect request, label: :request
           IO.inspect response, label: :response
