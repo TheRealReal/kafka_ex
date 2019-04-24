@@ -257,6 +257,11 @@ defmodule KafkaEx.Server0P8P2 do
         {error, state_out}
 
       {response, state_out} ->
+
+        IO.puts "-------------------------"
+        IO.inspect response, label: :response
+        IO.inspect state_out, label: :state_out
+
         last_offset =
           response |> hd |> Map.get(:partitions) |> hd |> Map.get(:last_offset)
 
