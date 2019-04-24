@@ -78,9 +78,9 @@ defmodule KafkaEx.Protocol.Fetch do
   end
 
   def parse_response(
-        <<_correlation_id::32-signed, topics_size::32-signed, rest::binary>>
+        <<_correlation_id::32-signed, topics_size::32-signed, rest::binary>> = res
       ) do
-    parse_topics(topics_size, rest, __MODULE__)
+    {res, parse_topics(topics_size, rest, __MODULE__)}
   end
 
   def parse_partitions(0, rest, partitions), do: {partitions, rest}

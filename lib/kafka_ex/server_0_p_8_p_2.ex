@@ -256,13 +256,10 @@ defmodule KafkaEx.Server0P8P2 do
       {{:error, error}, state_out} ->
         {error, state_out}
 
-      {response, state_out} ->
+      {{raw, response}, state_out} ->
 
-        if (response == nil || response == [] || (response |> hd |> Map.get(:partitions)) == nil || (response |> hd |> Map.get(:partitions)) == []) do
-          IO.puts "-------------------------"
-          IO.inspect request, label: :request
-          IO.inspect response, label: :response
-          IO.inspect state_out, label: :state_out
+        if (response == []) do
+          IO.puts "\n\n-------------------------\n#{Kernel.inspect(raw)}\n=====\n#{Kernel.inspect(response)}\n-------------------------"
         end
 
         last_offset =
