@@ -258,7 +258,11 @@ defmodule KafkaEx.Server0P8P2 do
 
       {response, state_out} ->
         last_offset =
-          response |> hd |> Map.get(:partitions) |> hd |> Map.get(:last_offset)
+          response
+          |> safe_hd
+          |> Map.get(:partitions)
+          |> safe_hd
+          |> Map.get(:last_offset)
 
         if last_offset != nil && request.auto_commit do
           offset_commit_request = %OffsetCommit.Request{
@@ -275,6 +279,10 @@ defmodule KafkaEx.Server0P8P2 do
         end
     end
   end
+
+  defp safe_hd(nil), do: %{}
+  defp safe_hd([]), do: %{}
+  defp safe_hd(list), do: hd(list)
 
   defp offset_commit(state, offset_commit_request) do
     {broker, state} = broker_for_consumer_group_with_update(state, true)
